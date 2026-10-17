@@ -2,7 +2,7 @@
 
 import type { NodeProps, NodeTypes } from "@xyflow/react";
 import { getIcon, IconGlyph } from "@/lib/icons";
-import { DEFAULT_STROKE_WIDTH, fillProps, frameStrokeStyle, strokeProps, withAlpha } from "@/lib/style";
+import { DEFAULT_STROKE_WIDTH, fillProps, isNearBlack, frameStrokeStyle, strokeProps, withAlpha } from "@/lib/style";
 import type { FillStyle, FrameNodeType, IconNodeType, ShapeKind, ShapeNodeType, StrokeStyle, TextNodeType } from "@/lib/types";
 import { useEditor } from "../EditorContext";
 import { EditableLabel, NodeHandles, Resizer } from "./common";
@@ -10,8 +10,10 @@ import { EditableLabel, NodeHandles, Resizer } from "./common";
 const SELECTED = "#6366f1";
 
 function IconNode({ id, data, selected }: NodeProps<IconNodeType>) {
-  const { openIconPicker } = useEditor();
-  const color = data.color ?? getIcon(data.iconId).color;
+  const { openIconPicker, canvasDark } = useEditor();
+  const baseColor = data.color ?? getIcon(data.iconId).color;
+  // Near-black brand marks (Kafka, GitHub, Vercel…) would vanish on a dark canvas.
+  const color = canvasDark && isNearBlack(baseColor) ? "#e2e8f0" : baseColor;
   const tile = data.tile ?? "filled";
   const tileStyle =
     tile === "filled"

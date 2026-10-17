@@ -7,6 +7,8 @@ export type EditorContextValue = {
   openIconPicker: (nodeId: string) => void;
   editingEdgeId: string | null;
   setEditingEdgeId: (id: string | null) => void;
+  /** True when the canvas background is dark; nodes use it to keep dark icons visible. */
+  canvasDark: boolean;
 };
 
 export const EditorContext = createContext<EditorContextValue | null>(null);
