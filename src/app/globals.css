@@ -1,26 +1,86 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background: #f8fafc;
+  color: #0f172a;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ---------- Canvas nodes ---------- */
+
+.arch-node.is-selected {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+.arch-label-input {
+  display: block;
+  width: 100%;
+  resize: none;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #ffffff;
+  outline: 1.5px solid #818cf8;
+  padding: 0 2px;
+  font: inherit;
+}
+
+/* Connection handles: hidden until hover or while connecting. */
+.react-flow__handle.arch-handle {
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid #6366f1;
+  background: #ffffff;
+  opacity: 0;
+  transition: opacity 120ms ease, scale 120ms ease;
+}
+
+.react-flow__node:hover .arch-handle,
+.react-flow__node.selected .arch-handle,
+.react-flow.connecting .arch-handle,
+.react-flow__handle.connectingfrom,
+.react-flow__handle.connectingto {
+  opacity: 1;
+}
+
+.react-flow__handle.arch-handle:hover {
+  scale: 1.35;
+  background: #6366f1;
+}
+
+/* Resizer */
+.react-flow__resize-control.line.arch-resize-line {
+  border-color: #6366f1;
+}
+.react-flow__resize-control.handle.arch-resize-handle {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  border: 1.5px solid #6366f1;
+  background: #ffffff;
+}
+
+/* Frames and their contents shouldn't show React Flow's default node chrome. */
+.react-flow__node-frame,
+.react-flow__node-shape,
+.react-flow__node-icon,
+.react-flow__node-text {
+  background: transparent;
+}
+
+.react-flow__selection {
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid #818cf8;
+}
+
+.react-flow__controls {
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.08);
+  border: 1px solid #e2e8f0;
 }

@@ -1,36 +1,26 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ArchFlow — System Architecture Designer
 
-## Getting Started
+An Eraser.io-style diagram editor for system architecture, built with Next.js, React Flow, and Tailwind.
 
-First, run the development server:
+## Run
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev      # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Icon library** — 100+ icons (clients, compute, data, networking, messaging, security, DevOps, and brand icons like AWS, Kubernetes, Postgres, Kafka, Redis). Search, click to add, or drag onto the canvas. Double-click an icon node (or use the right panel) to swap its icon.
+- **Shapes** — rectangle, rounded, ellipse, diamond, cylinder, sticky note, text, and resizable **groups** (drag nodes into a group to nest them).
+- **Connections** — drag from any side dot; elbow / step / curve / straight lines, arrowheads, colors, dashed, animated, and editable labels (double-click).
+- **Export** — JPEG, PDF, PNG, SVG (the whole diagram, not just the visible area), plus save/open `.json`.
+- **Editing** — undo/redo, copy/paste/duplicate, box select, snap to grid, autosave to the browser.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Code map
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `src/components/editor/Editor.tsx` — canvas, state, shortcuts, grouping, export wiring
+- `src/components/editor/nodes/` — icon, shape, group, and text nodes
+- `src/components/editor/edges.tsx` — labeled edge
+- `src/lib/icons.tsx` — icon registry (add new icons here)
+- `src/lib/export.ts` — JPEG/PNG/SVG/PDF/JSON export
