@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type DragEvent, type ReactNode } from "react";
-import { LuChevronDown, LuCircle, LuDatabase, LuDiamond, LuFrame, LuRectangleHorizontal, LuSearch, LuSquare, LuStickyNote, LuType } from "react-icons/lu";
+import { LuChevronDown, LuCircle, LuDatabase, LuDiamond, LuHexagon, LuRectangleHorizontal, LuSearch, LuSquare, LuSquareDashed, LuStickyNote, LuTriangle, LuType } from "react-icons/lu";
 import { ICON_CATEGORIES, IconGlyph, searchIcons } from "@/lib/icons";
 import { DRAG_MIME, type DragPayload } from "@/lib/types";
 
@@ -15,10 +15,13 @@ const SHAPES: { payload: DragPayload; label: string; icon: ReactNode }[] = [
   { payload: { kind: "shape", shape: "rounded" }, label: "Rounded", icon: <LuRectangleHorizontal size={18} /> },
   { payload: { kind: "shape", shape: "ellipse" }, label: "Ellipse", icon: <LuCircle size={18} /> },
   { payload: { kind: "shape", shape: "diamond" }, label: "Diamond", icon: <LuDiamond size={18} /> },
+  { payload: { kind: "shape", shape: "hexagon" }, label: "Hexagon", icon: <LuHexagon size={18} /> },
+  { payload: { kind: "shape", shape: "triangle" }, label: "Triangle", icon: <LuTriangle size={18} /> },
+  { payload: { kind: "shape", shape: "parallelogram" }, label: "Slanted", icon: <LuSquare size={18} className="-skew-x-12" /> },
   { payload: { kind: "shape", shape: "cylinder" }, label: "Cylinder", icon: <LuDatabase size={18} /> },
   { payload: { kind: "shape", shape: "note" }, label: "Note", icon: <LuStickyNote size={18} /> },
   { payload: { kind: "text" }, label: "Text", icon: <LuType size={18} /> },
-  { payload: { kind: "frame" }, label: "Group", icon: <LuFrame size={18} /> },
+  { payload: { kind: "frame" }, label: "Group", icon: <LuSquareDashed size={18} /> },
 ];
 
 export function Sidebar({ onAdd }: { onAdd: (p: DragPayload) => void }) {

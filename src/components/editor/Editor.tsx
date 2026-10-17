@@ -18,22 +18,22 @@ import {
   type XYPosition,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent } from "react";
 import { exportDiagram, exportJson, parseDoc, type ExportFormat } from "@/lib/export";
 import { createEdge, createNode, DEFAULT_EDGE_DATA, markersFor, sortParentsFirst, uid } from "@/lib/factory";
 import { useHistory } from "@/lib/history";
 import { blankDoc, sampleDoc } from "@/lib/sample";
-import { DRAG_MIME, type AppEdge, type AppNode, type DiagramDoc, type DragPayload, type LabeledEdgeData } from "@/lib/types";
+import { canvasInk, canvasMutedInk, DEFAULT_CANVAS, isDarkColor, patternColor } from "@/lib/style";
+import { DRAG_MIME, type AppEdge, type AppNode, type CanvasSettings, type DiagramDoc, type DragPayload } from "@/lib/types";
 import { edgeTypes } from "./edges";
 import { EditorContext, type EditorContextValue } from "./EditorContext";
 import { IconPicker } from "./IconPicker";
 import { nodeTypes } from "./nodes";
-import { PropertiesPanel, type BackgroundKind } from "./PropertiesPanel";
+import { PropertiesPanel, type BulkStyle, type EdgePatch } from "./PropertiesPanel";
 import { Sidebar } from "./Sidebar";
 import { Toolbar, type Tool } from "./Toolbar";
 
 const STORAGE_KEY = "archflow:diagram:v1";
-const CANVAS_BG = "#f8fafc";
 
 function loadInitial(): DiagramDoc {
   try {
@@ -64,7 +64,7 @@ function EditorInner() {
   const [edges, setEdges, onEdgesChange] = useEdgesState<AppEdge>(initial.edges);
   const [title, setTitle] = useState(initial.title);
   const [tool, setTool] = useState<Tool>("select");
-  const [background, setBackground] = useState<BackgroundKind>("dots");
+  const [canvas, setCanvas] = useState<CanvasSettings>({ ...DEFAULT_CANVAS, ...initial.canvas });
   const [iconPickerFor, setIconPickerFor] = useState<string | null>(null);
   const [editingEdgeId, setEditingEdgeId] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
@@ -87,14 +87,14 @@ function EditorInner() {
   useEffect(() => {
     const t = setTimeout(() => {
       try {
-        const doc: DiagramDoc = { version: 1, title, nodes, edges };
+        const doc: DiagramDoc = { version: 1, title, nodes, edges, canvas };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(doc));
       } catch {
         // storage full or unavailable — ignore
       }
     }, 400);
     return () => clearTimeout(t);
-  }, [nodes, edges, title]);
+  }, [nodes, edges, title, canvas]);
 
   // ---------- Adding nodes ----------
 
@@ -203,18 +203,42 @@ function EditorInner() {
   );
 
   const onEdgeChange = useCallback(
-    (id: string, patch: Partial<LabeledEdgeData> & { animated?: boolean }, key: string) => {
+    (id: string, patch: EdgePatch, key: string) => {
       takeSnapshot(`edge:${id}:${key}`);
       const { animated, ...dataPatch } = patch;
       setEdges((es) =>
         es.map((e) => {
           if (e.id !== id) return e;
           const data = { ...DEFAULT_EDGE_DATA, ...e.data, ...dataPatch };
-          return { ...e, data, animated: animated ?? e.animated, ...markersFor(data.arrows, data.color) };
+          return { ...e, data, animated: animated ?? e.animated, ...markersFor(data.arrows, data.color, data.strokeWidth) };
         }),
       );
     },
     [setEdges, takeSnapshot],
+  );
+
+  const onBulkStyle = useCallback(
+    ({ strokeStyle, opacity }: BulkStyle) => {
+      takeSnapshot(`bulk:${strokeStyle ? "stroke" : "opacity"}`);
+      setNodes((ns) =>
+        ns.map((n) => {
+          if (!n.selected) return n;
+          const data: Record<string, unknown> = { ...n.data };
+          if (opacity !== undefined) data.opacity = opacity;
+          if (strokeStyle && (n.type === "shape" || n.type === "frame")) {
+            data.strokeStyle = strokeStyle;
+            delete data.dashed;
+          }
+          return { ...n, data } as AppNode;
+        }),
+      );
+      if (strokeStyle) {
+        setEdges((es) =>
+          es.map((e) => (e.selected && e.data ? { ...e, data: { ...e.data, strokeStyle, dashed: undefined } } : e)),
+        );
+      }
+    },
+    [setNodes, setEdges, takeSnapshot],
   );
 
   const onPickIcon = useCallback(
@@ -297,6 +321,7 @@ function EditorInner() {
       setNodes(sortParentsFirst(doc.nodes));
       setEdges(doc.edges);
       setTitle(doc.title);
+      setCanvas({ ...DEFAULT_CANVAS, ...doc.canvas });
       requestAnimationFrame(() => rf.fitView({ padding: 0.2, duration: 300 }));
     },
     [rf, setNodes, setEdges, takeSnapshot],
@@ -316,7 +341,11 @@ function EditorInner() {
       // Let the deselection paint so outlines don't end up in the image.
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
       try {
-        await exportDiagram(format, rf.getNodesBounds(all), { title, background: CANVAS_BG });
+        await exportDiagram(format, rf.getNodesBounds(all), {
+          title,
+          background: canvas.color,
+          transparent: canvas.transparentExport,
+        });
         notify(`Exported as ${format.toUpperCase()}`);
       } catch (err) {
         console.error(err);
@@ -325,12 +354,12 @@ function EditorInner() {
         setExporting(false);
       }
     },
-    [rf, title, setNodes, setEdges, notify],
+    [rf, title, canvas, setNodes, setEdges, notify],
   );
 
   const saveJson = useCallback(() => {
-    exportJson({ version: 1, title, nodes: rf.getNodes(), edges: rf.getEdges() });
-  }, [rf, title]);
+    exportJson({ version: 1, title, nodes: rf.getNodes(), edges: rf.getEdges(), canvas });
+  }, [rf, title, canvas]);
 
   const onFileChosen = useCallback(
     async (file: File | undefined) => {
@@ -384,8 +413,8 @@ function EditorInner() {
   }, [undo, redo, copySelection, paste, duplicate, saveJson, setNodes, iconPickerFor]);
 
   const ctx = useMemo<EditorContextValue>(
-    () => ({ takeSnapshot, openIconPicker: setIconPickerFor, editingEdgeId, setEditingEdgeId }),
-    [takeSnapshot, editingEdgeId],
+    () => ({ takeSnapshot, openIconPicker: setIconPickerFor, editingEdgeId, setEditingEdgeId, canvasDark: isDarkColor(canvas.color) }),
+    [takeSnapshot, editingEdgeId, canvas.color],
   );
 
   const pickerNode = iconPickerFor ? nodes.find((n) => n.id === iconPickerFor) : undefined;
@@ -412,7 +441,13 @@ function EditorInner() {
         />
         <div className="flex min-h-0 flex-1">
           <Sidebar onAdd={addAtCenter} />
-          <div ref={canvasRef} className="relative min-w-0 flex-1" onDragOver={onDragOver} onDrop={onDrop}>
+          <div
+            ref={canvasRef}
+            className="relative min-w-0 flex-1"
+            style={{ "--canvas-ink": canvasInk(canvas.color), "--canvas-muted": canvasMutedInk(canvas.color) } as CSSProperties}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
+          >
             <ReactFlow<AppNode, AppEdge>
               nodes={nodes}
               edges={edges}
@@ -446,18 +481,22 @@ function EditorInner() {
               fitViewOptions={{ padding: 0.2 }}
               proOptions={{ hideAttribution: true }}
               className={tool === "hand" ? "cursor-grab" : ""}
-              style={{ backgroundColor: CANVAS_BG }}
+              colorMode={isDarkColor(canvas.color) ? "dark" : "light"}
+              style={{ backgroundColor: canvas.color }}
             >
-              {background !== "none" && (
+              {canvas.pattern !== "none" && (
                 <Background
-                  variant={background === "dots" ? BackgroundVariant.Dots : BackgroundVariant.Lines}
-                  gap={background === "dots" ? 20 : 32}
-                  size={background === "dots" ? 1.4 : 1}
-                  color={background === "dots" ? "#cbd5e1" : "#e2e8f0"}
+                  bgColor={canvas.color}
+                  variant={
+                    canvas.pattern === "dots" ? BackgroundVariant.Dots : canvas.pattern === "cross" ? BackgroundVariant.Cross : BackgroundVariant.Lines
+                  }
+                  gap={canvas.pattern === "dots" ? 20 : canvas.pattern === "cross" ? 28 : 32}
+                  size={canvas.pattern === "dots" ? 1.4 : canvas.pattern === "cross" ? 5 : 1}
+                  color={patternColor(canvas.color, canvas.pattern)}
                 />
               )}
               <Controls position="bottom-left" showInteractive={false} />
-              <MiniMap position="bottom-right" pannable zoomable nodeColor="#c7d2fe" maskColor="rgba(241,245,249,0.7)" className="!rounded-lg !border !border-slate-200" />
+              <MiniMap position="bottom-right" pannable zoomable nodeColor="#c7d2fe" maskColor={isDarkColor(canvas.color) ? "rgba(2,6,23,0.6)" : "rgba(241,245,249,0.7)"} className="!rounded-lg !border !border-slate-200" />
             </ReactFlow>
             {nodes.length === 0 && (
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -481,8 +520,9 @@ function EditorInner() {
             onPickIcon={setIconPickerFor}
             onDuplicate={duplicate}
             onDelete={deleteSelection}
-            background={background}
-            onBackgroundChange={setBackground}
+            onBulkStyle={onBulkStyle}
+            canvas={canvas}
+            onCanvasChange={(patch) => setCanvas((c) => ({ ...c, ...patch }))}
           />
         </div>
       </div>

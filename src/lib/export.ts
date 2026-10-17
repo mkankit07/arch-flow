@@ -43,7 +43,7 @@ function exportFilter(node: HTMLElement) {
 export async function exportDiagram(
   format: ExportFormat,
   bounds: Rect,
-  opts: { title: string; background: string },
+  opts: { title: string; background: string; transparent?: boolean },
 ) {
   const viewport = document.querySelector<HTMLElement>(".react-flow__viewport");
   if (!viewport) throw new Error("Canvas not found");
@@ -53,7 +53,8 @@ export async function exportDiagram(
   const pixelRatio = Math.max(0.5, Math.min(2, MAX_CANVAS_DIM / Math.max(width, height)));
 
   const options = {
-    backgroundColor: format === "png" ? undefined : opts.background,
+    // JPEG and PDF have no alpha channel, so they always get the canvas color.
+    backgroundColor: opts.transparent && (format === "png" || format === "svg") ? undefined : opts.background,
     width,
     height,
     pixelRatio,
@@ -69,16 +70,16 @@ export async function exportDiagram(
 
   switch (format) {
     case "png":
-      download(await toPng(viewport, { ...options, backgroundColor: opts.background }), `${name}.png`);
+      download(await toPng(viewport, options), `${name}.png`);
       return;
     case "svg":
       download(await toSvg(viewport, options), `${name}.svg`);
       return;
     case "jpeg":
-      download(await toJpeg(viewport, { ...options, quality: 0.95 }), `${name}.jpg`);
+      download(await toJpeg(viewport, { ...options, backgroundColor: opts.background, quality: 0.95 }), `${name}.jpg`);
       return;
     case "pdf": {
-      const dataUrl = await toJpeg(viewport, { ...options, quality: 0.95 });
+      const dataUrl = await toJpeg(viewport, { ...options, backgroundColor: opts.background, quality: 0.95 });
       const { jsPDF } = await import("jspdf");
       const pdf = new jsPDF({
         orientation: width >= height ? "landscape" : "portrait",
@@ -112,5 +113,6 @@ export function parseDoc(text: string): DiagramDoc {
     title: typeof raw.title === "string" ? raw.title : "Imported diagram",
     nodes: raw.nodes,
     edges: raw.edges,
+    canvas: raw.canvas && typeof raw.canvas === "object" ? raw.canvas : undefined,
   };
 }

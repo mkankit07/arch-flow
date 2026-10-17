@@ -28,6 +28,8 @@ function luminance(hex: string) {
 }
 
 export const isDarkColor = (hex: string) => luminance(hex) < 0.2;
+/** Near-black ink (e.g. Kafka, GitHub, Vercel brand marks) that disappears on dark canvases. */
+export const isNearBlack = (hex: string) => luminance(hex) < 0.04;
 
 /** Default text color for labels drawn directly on the canvas. */
 export const canvasInk = (bg: string) => (isDarkColor(bg) ? "#e2e8f0" : "#0f172a");

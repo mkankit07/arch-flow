@@ -11,6 +11,7 @@ import {
   type EdgeTypes,
 } from "@xyflow/react";
 import { useState } from "react";
+import { DEFAULT_EDGE_WIDTH, edgeStrokeStyle, strokeProps } from "@/lib/style";
 import type { AppEdge } from "@/lib/types";
 import { useEditor } from "./EditorContext";
 
@@ -57,6 +58,10 @@ function LabeledEdge(props: EdgeProps<AppEdge>) {
   const color = data?.color ?? "#64748b";
   const editing = editingEdgeId === id;
   const label = data?.label ?? "";
+  const width = data?.strokeWidth ?? DEFAULT_EDGE_WIDTH;
+  const style = edgeStrokeStyle(data);
+  // Solid + animated falls back to React Flow's own marching-dash pattern.
+  const stroke = strokeProps(style, selected ? width + 0.75 : width);
 
   return (
     <>
@@ -68,8 +73,9 @@ function LabeledEdge(props: EdgeProps<AppEdge>) {
         interactionWidth={24}
         style={{
           stroke: selected ? "#6366f1" : color,
-          strokeWidth: selected ? 2.5 : 1.75,
-          strokeDasharray: data?.dashed && !animated ? "6 5" : undefined,
+          strokeWidth: stroke.strokeWidth,
+          strokeDasharray: style === "solid" && animated ? undefined : stroke.strokeDasharray,
+          strokeLinecap: stroke.strokeLinecap,
         }}
       />
       {(label || editing) && (

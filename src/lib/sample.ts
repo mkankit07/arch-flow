@@ -9,7 +9,7 @@ export function sampleDoc(): DiagramDoc {
       position: { x: 360, y: 20 },
       width: 600,
       height: 460,
-      data: { label: "Production VPC", color: "#8b5cf6", dashed: true },
+      data: { label: "Production VPC", color: "#8b5cf6", strokeStyle: "dashed", fillStyle: "semi" },
     },
     { id: "users", type: "icon", position: { x: 20, y: 200 }, data: { label: "Users", iconId: "users" } },
     { id: "cdn", type: "icon", position: { x: 190, y: 200 }, data: { label: "CDN", iconId: "cloudflare" } },
@@ -79,9 +79,9 @@ export function sampleDoc(): DiagramDoc {
     createEdge({ source: "lb", target: "api", sourceHandle: "r", targetHandle: "l" }),
     createEdge({ source: "api", target: "pg", sourceHandle: "r", targetHandle: "l" }, { label: "SQL" }),
     createEdge({ source: "api", target: "redis", sourceHandle: "r", targetHandle: "l" }),
-    createEdge({ source: "api", target: "kafka", sourceHandle: "b", targetHandle: "t" }, { label: "events", dashed: true }),
+    createEdge({ source: "api", target: "kafka", sourceHandle: "b", targetHandle: "t" }, { label: "events", strokeStyle: "dashed" }),
     createEdge({ source: "kafka", target: "worker", sourceHandle: "r", targetHandle: "l" }, { label: "consume" }, { animated: true }),
-    createEdge({ source: "worker", target: "s3", sourceHandle: "r", targetHandle: "l" }, { label: "uploads" }),
+    createEdge({ source: "worker", target: "s3", sourceHandle: "r", targetHandle: "l" }, { label: "uploads", strokeStyle: "dotted", strokeWidth: 2.5 }),
     createEdge({ source: "api", target: "stripe", sourceHandle: "t", targetHandle: "l" }, { label: "charges", color: "#635bff" }),
   ];
 
