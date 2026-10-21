@@ -1,7 +1,7 @@
 "use client";
 
 import { Handle, NodeResizer, Position, useReactFlow } from "@xyflow/react";
-import { useState, type CSSProperties } from "react";
+import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { useEditor } from "../EditorContext";
 
 const SIDES = [
@@ -42,17 +42,29 @@ export function EditableLabel({
   className,
   style,
   placeholder = "Label",
+  multiline = false,
 }: {
   nodeId: string;
   value: string;
   className?: string;
   style?: CSSProperties;
   placeholder?: string;
+  /** Enter inserts a line break and Cmd/Ctrl+Enter commits; otherwise Enter commits and Shift+Enter breaks. */
+  multiline?: boolean;
 }) {
   const { takeSnapshot } = useEditor();
   const { updateNodeData } = useReactFlow();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Grow the textarea with its content, including soft-wrapped lines.
+  useLayoutEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [editing, draft]);
 
   const commit = () => {
     setEditing(false);
@@ -65,8 +77,9 @@ export function EditableLabel({
   if (editing) {
     return (
       <textarea
+        ref={inputRef}
         autoFocus
-        rows={Math.max(1, draft.split("\n").length)}
+        rows={1}
         className={`nodrag nopan nowheel arch-label-input ${className ?? ""}`}
         style={style}
         value={draft}
@@ -75,7 +88,8 @@ export function EditableLabel({
         onBlur={commit}
         onKeyDown={(e) => {
           e.stopPropagation();
-          if (e.key === "Enter" && !e.shiftKey) {
+          const mod = e.metaKey || e.ctrlKey;
+          if (e.key === "Enter" && (multiline ? mod : !e.shiftKey)) {
             e.preventDefault();
             commit();
           } else if (e.key === "Escape") {

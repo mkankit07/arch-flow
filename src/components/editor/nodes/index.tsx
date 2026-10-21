@@ -145,6 +145,7 @@ function ShapeNode({ id, data, selected, width, height }: NodeProps<ShapeNodeTyp
         <EditableLabel
           nodeId={id}
           value={data.label}
+          multiline
           className="max-w-full font-medium leading-snug"
           style={{ color: data.textColor, fontSize: data.fontSize ?? 13 }}
         />
@@ -190,6 +191,7 @@ function TextNode({ id, data, selected }: NodeProps<TextNodeType>) {
         nodeId={id}
         value={data.label}
         placeholder="Text"
+        multiline
         className="min-w-[40px] font-semibold leading-tight"
         style={{ fontSize: data.fontSize, color: data.color ?? "var(--canvas-ink)" }}
       />
